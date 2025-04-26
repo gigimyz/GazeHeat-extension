@@ -1,0 +1,19 @@
+
+body {
+  min-width: 150px;
+  font-family: sans-serif;
+}
+button {
+  margin: 5px;
+  padding: 10px;
+  width: 120px;
+}
+#webgazerGazeDot {
+  width: 8px !important;
+  height: 8px !important;
+  background-color: red !important;
+  border-radius: 5% !important;
+  position: absolute;
+  pointer-events: none;
+  z-index: 999999;
+}

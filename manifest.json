@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "GazeHeat",
+  "version": "0.3",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["webgazer.js", "heatmap.min.js", "page_tracker.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
