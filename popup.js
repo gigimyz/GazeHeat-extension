@@ -4,7 +4,7 @@ function sendCommandToTab(command) {
       chrome.tabs.sendMessage(tab.id, { command }, (response) => {
         if (chrome.runtime.lastError) {
           console.warn("Could not connect to content script:", chrome.runtime.lastError.message);
-          alert("GazeHeat is not active on this page. Try refreshing or visiting a different webpage.");
+          // ✅ Just log, no alert
         }
       });
     } else {
@@ -15,3 +15,7 @@ function sendCommandToTab(command) {
 
 document.getElementById("start").addEventListener("click", () => sendCommandToTab("start"));
 document.getElementById("stop").addEventListener("click", () => sendCommandToTab("stop"));
+document.getElementById("toggle-dot").addEventListener("click", () => {
+  sendCommandToTab("toggle-gaze-dot");
+});
+
