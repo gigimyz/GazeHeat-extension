@@ -11,7 +11,7 @@ function waitForLibs(callback) {
   }, 300);
 }
 
-// 🧩 New helper functions for attention scoring
+// 🧩 Helper: Visible text blocks
 function getVisibleTextBlocks() {
   return Array.from(document.querySelectorAll('p, h1, h2, h3, li, article, section'));
 }
@@ -33,6 +33,7 @@ function correctGaze(data) {
     timestamp: Date.now()
   };
 }
+
 function recordGazePoint(gazePoint) {
   const textBlocks = getVisibleTextBlocks();
   let bestMatch = null;
@@ -59,7 +60,6 @@ function recordGazePoint(gazePoint) {
   }
 }
 
-
 function printAttentionRanking() {
   const ranked = Array.from(attentionScores.entries())
     .sort((a, b) => b[1] - a[1]);
@@ -72,73 +72,73 @@ function printAttentionRanking() {
   });
 }
 
-// 🆕 Utility to find nearest parent ID (for exporting)
-function getParentSectionId(el) {
-  let current = el;
-  while (current && current !== document.body) {
-    if (current.id) return current.id;
-    current = current.parentElement;
-  }
-  return "root"; // fallback
-}
-
-// 🆕 Utility to save gaze sections to JSON
-function saveGazeSections() {
-  const ranked = Array.from(attentionScores.entries())
-    .sort((a, b) => b[1] - a[1]);
-  
-  const sections = ranked.map(([block, score], index) => ({
-    section_id: index,
-    tag: block.tagName,
-    text: block.innerText.trim(),
-    score: score,
-    parent_section: getParentSectionId(block)
-  }));
-
-  const blob = new Blob([JSON.stringify(sections, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = "gazeheat_sections.json";
-  a.click();
-
-  console.log("📥 Gazeheat section summary saved as gazeheat_sections.json");
-}
-
 function startTracking() {
   waitForLibs(() => {
     console.log("✅ GazeHeat: Starting tracking");
 
-    heatmapInstance = h337.create({ container: document.body });
-    gazeData = [];
-    attentionScores = new Map(); // reset for each new tracking session
+    heatmapInstance = h337.create({
+      container: document.body,
+      radius: 40,
+      maxOpacity: 0.6,
+      minOpacity: 0.1,
+      blur: 0.75
+    });
+    window.gazeHeatmap = heatmapInstance; 
+
+    setTimeout(() => {
+      const canvas = document.querySelector('.heatmap-canvas');
+      if (canvas) {
+        console.log("✅ Resizing heatmap canvas");
+    
+        // Update width and height based on total document size
+        const width = document.documentElement.scrollWidth;
+        const height = document.documentElement.scrollHeight;
+    
+        canvas.style.position = "absolute";
+        canvas.style.top = "0";
+        canvas.style.left = "0";
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.zIndex = "9999";
+        canvas.style.pointerEvents = "none";
+    
+        // Also force heatmapInstance to be aware of full page
+        if (heatmapInstance._renderer) {
+          heatmapInstance._renderer._width = width;
+          heatmapInstance._renderer._height = height;
+        }
+    
+        console.log("✅ Heatmap canvas adjusted for full page size!");
+      }
+    }, 500);
+    
+
+    console.log("🔵 GazeHeat: Initializing gazedata to empty");
+    gazeData.length = 0;   
+    attentionScores.clear();
 
     webgazer
       .setGazeListener((data, timestamp) => {
         if (data) {
           const corrected = correctGaze(data);
-          gazeData.push({ x: corrected.x, y: corrected.y, value: 1 });
-
-          recordGazePoint(corrected); // ✅ track attention scoring live
-
-          // console.log(`[Gaze] x=${data.x.toFixed(1)} y=${data.y.toFixed(1)} t=${timestamp}`);
+          gazeData.push({ x: corrected.x, y: corrected.y, value: 5 });
+          recordGazePoint(corrected);
         }
       })
-      .showVideoPreview(true)         // ✅ Show webcam preview
-      .showFaceOverlay(true)           // ✅ Draw face tracking box
-      .showFaceFeedbackBox(true)       // ✅ Face feedback indicator
-      .showPredictionPoints(true)      // ✅ Red prediction points
+      .showVideoPreview(true)
+      .showFaceOverlay(true)
+      .showFaceFeedbackBox(true)
+      .showPredictionPoints(true)
       .begin()
       .then(() => {
         console.log("🎯 WebGazer is running!");
 
-        // Calibration encouragement
         setTimeout(() => {
           alert("📌 Move your head around and stare at different parts of the screen for better calibration!");
         }, 2000);
-        
-        // Slow debug logging of prediction
+
         setInterval(() => {
           const pred = webgazer.getCurrentPrediction();
           if (pred && pred.x != null && pred.y != null) {
@@ -154,26 +154,61 @@ function startTracking() {
 function stopTracking() {
   console.log("🛑 GazeHeat: Stopping tracking");
 
-  webgazer.pause();  // Pause prediction engine
+  webgazer.pause();
+
+  if (!heatmapInstance) {
+    console.error("❗ No heatmap instance found!");
+    alert("❗ Error: Heatmap was not created. Please refresh and try again.");
+    return;
+  }
+
+  console.log("🔴 GazeData length:", gazeData.length);
+
+  // ✅ Clip gaze points correctly!
+  const pageWidth = document.documentElement.scrollWidth;
+  const pageHeight = document.documentElement.scrollHeight;
+  console.log("📏 Page dimensions:", pageWidth, pageHeight);
+  // ✅ Now feed corrected gazeData to heatmap
+  
+  // Resize the heatmap canvas to match full page
+  const canvas = document.querySelector('.heatmap-canvas');
+  if (canvas) {
+    canvas.style.width = pageWidth + "px";
+    canvas.style.height = pageHeight + "px";
+    canvas.width = pageWidth;
+    canvas.height = pageHeight;
+    console.log("✅ Heatmap canvas resized again before setting data");
+  }
 
   heatmapInstance.setData({
-    max: 10,
-    data: gazeData
+    max: 10, // You can change if you want
+    data: gazeData.map(p => ({
+      x: Math.min(Math.max(p.x, 0), pageWidth - 1),
+      y: Math.min(Math.max(p.y, 0), pageHeight - 1),
+      value: p.value
+    }))
   });
 
-  alert("✅ Gaze data collected! Heatmap displayed. Move around the page if you don't see it right away.");
+  if (heatmapInstance._renderer) {
+    heatmapInstance._renderer._width = pageWidth;
+    heatmapInstance._renderer._height = pageHeight;
+    heatmapInstance._renderer._renderBoundaries = [0, 0, pageWidth, pageHeight];
+}
 
-  // 2. Print basic analytics
-  printAttentionRanking(); 
+  heatmapInstance.repaint();
+  console.log("✅ Heatmap repainted with corrected gaze data!");
 
-  // 3. Show a Basic Analytics Panel
+  alert("✅ Gaze data collected! Heatmap and Analytics displayed!");
+
+  printAttentionRanking();
   showBasicAnalytics();
 }
+
+
 
 function showBasicAnalytics() {
   console.log("📊 Generating basic analytics...");
 
-  // Create container
   let panel = document.createElement('div');
   panel.style.position = 'fixed';
   panel.style.bottom = '10px';
@@ -198,9 +233,8 @@ function showBasicAnalytics() {
     <hr style="margin: 10px 0;">
   `;
 
-  // Analyze attention scores
   const ranked = Array.from(attentionScores.entries())
-    .filter(([block, score]) => block.innerText.trim().length > 0) // ✅ filter out empty text
+    .filter(([block, score]) => block.innerText.trim().length > 0)
     .sort((a, b) => b[1] - a[1]);
 
   if (ranked.length === 0) {
@@ -209,7 +243,6 @@ function showBasicAnalytics() {
     return;
   }
 
-  // Top 5 most focused sections
   panel.innerHTML += `<h3 style="font-size: 16px; margin-top: 10px;">🔥 Top Focused Sections:</h3><ul>`;
   ranked.slice(0, 5).forEach(([block, score], idx) => {
     const snippet = block.innerText.trim().slice(0, 80);
@@ -217,20 +250,10 @@ function showBasicAnalytics() {
   });
   panel.innerHTML += `</ul>`;
 
-  // Sections with low attention (score <= 2)
-  const lowAttention = ranked.filter(([block, score]) => score <= 2);
-  if (lowAttention.length > 0) {
-    panel.innerHTML += `<h3 style="font-size: 16px; margin-top: 10px;">❗ Possibly Skipped Sections:</h3><ul>`;
-    lowAttention.forEach(([block, score], idx) => {
-      const snippet = block.innerText.trim().slice(0, 80);
-      panel.innerHTML += `<li><b>${block.tagName}</b> - "${snippet}" (Score: ${score})</li>`;
-    });
-    panel.innerHTML += `</ul>`;
-  }
-
   document.body.appendChild(panel);
 }
 
+// 🧩 Start/Stop control from extension
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
 
@@ -240,3 +263,7 @@ window.addEventListener("message", (event) => {
     stopTracking();
   }
 });
+
+// 🧩 Expose globals for console debugging
+window.gazeData = gazeData;
+window.attentionScores = attentionScores;
