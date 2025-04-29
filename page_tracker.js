@@ -83,7 +83,7 @@ function startTracking() {
       minOpacity: 0.1,
       blur: 0.75
     });
-    window.gazeHeatmap = heatmapInstance; 
+    // window.gazeHeatmap = heatmapInstance; 
 
     setTimeout(() => {
       const canvas = document.querySelector('.heatmap-canvas');
@@ -182,11 +182,13 @@ function stopTracking() {
 
   heatmapInstance.setData({
     max: 10, // You can change if you want
-    data: gazeData.map(p => ({
-      x: Math.min(Math.max(p.x, 0), pageWidth - 1),
-      y: Math.min(Math.max(p.y, 0), pageHeight - 1),
-      value: p.value
-    }))
+
+    // round the gazedata to integer values
+    data: gazeData.map(point => ({
+      ...point,
+      x: Math.round(point.x),
+      y: Math.round(point.y)
+    })),
   });
 
   if (heatmapInstance._renderer) {

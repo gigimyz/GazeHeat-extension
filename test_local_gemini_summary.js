@@ -8,21 +8,6 @@ const topTexts = [
   "Tom Sobolik"
 ];
 
-const payload = {
-  contents: [
-    {
-      parts: [
-        {
-          text:
-            `You are an assistant helping summarize webpage sections a user focused on. Summarize these sections into a short, clear paragraph:\n\n` +
-            topTexts.map((t, i) => `(${i + 1}) ${t}`).join('\n\n') +
-            `\n\nSummary:`
-        }
-      ]
-    }
-  ]
-};
-
 async function run() {
     try {
       const response = await fetch('http://localhost:5001/gemini-summary', {
