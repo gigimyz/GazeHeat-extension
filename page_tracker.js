@@ -225,13 +225,20 @@ function showBasicAnalytics() {
   panel.id = 'gazeheat-analytics-panel';
 
   panel.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2 style="font-size: 18px; margin: 0;">🧠 Basic Analytics</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 style="font-size: 18px; margin: 0;">🧠 Basic Analytics</h2>
+    <div>
+      <button id="gazeheat-ai-summary-btn" 
+              style="margin-left:10px; background:#007bff; color:white; border:none; padding:5px 8px; border-radius:5px; cursor:pointer;">
+        ✨ AI Summary
+      </button>
       <button onclick="document.getElementById('gazeheat-analytics-panel').remove()" 
               style="background: none; border: none; font-size: 18px; cursor: pointer;">❌</button>
     </div>
-    <hr style="margin: 10px 0;">
-  `;
+  </div>
+  <hr style="margin: 10px 0;">
+`;
+
 
   const ranked = Array.from(attentionScores.entries())
     .filter(([block, score]) => block.innerText.trim().length > 0)
@@ -251,8 +258,43 @@ function showBasicAnalytics() {
   panel.innerHTML += `</ul>`;
 
   document.body.appendChild(panel);
-}
 
+  // 🧩 AI Summary button
+  panel.querySelector("#gazeheat-ai-summary-btn").addEventListener("click", async () => {
+    try {
+      const topTexts = getTopFocusedTexts(5);
+      if (topTexts.length === 0) {
+        alert("No enough focused sections to summarize.");
+        return;
+      }
+  
+      const aiSummaryPanelId = 'gazeheat-ai-summary-panel';
+      // Avoid creating multiple times
+      if (document.getElementById(aiSummaryPanelId)) {
+        console.log("✅ Summary already generated.");
+        return;
+      }
+  
+      const summary = await summarizeFocusedSections(topTexts);
+      console.log("📝 AI Summary generated:", summary);
+  
+      const summaryDiv = document.createElement('div');
+      summaryDiv.id = aiSummaryPanelId;
+      summaryDiv.style.marginTop = "15px";
+      summaryDiv.innerHTML = `
+        <h3 style="font-size: 16px;">📝 AI Summary:</h3>
+        <p style="font-size: 14px;">${summary.replace(/\n/g, '<br>')}</p>
+      `;
+  
+      panel.appendChild(summaryDiv);
+  
+    } catch (err) {
+      console.error("❌ Failed to generate AI summary:", err);
+      alert("Failed to generate summary. Please check console.");
+    }
+  });
+}
+  
 // 🧩 Start/Stop control from extension
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
@@ -267,3 +309,38 @@ window.addEventListener("message", (event) => {
 // 🧩 Expose globals for console debugging
 window.gazeData = gazeData;
 window.attentionScores = attentionScores;
+
+function getTopFocusedTexts(N = 5) {
+  const ranked = Array.from(attentionScores.entries())
+    .filter(([block, score]) => block.innerText.trim().length > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  const topTexts = ranked.slice(0, N).map(([block, score]) => block.innerText.trim());
+  return topTexts;
+}
+async function summarizeFocusedSections(topTexts) {
+  if (!Array.isArray(topTexts) || topTexts.length === 0) {
+    throw new Error("No focused text blocks to summarize.");
+  }
+  console.log("📝 Top focused texts:", topTexts);  
+  try {
+    const response = await fetch('http://localhost:5001/gemini-summary', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ texts: topTexts })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.summary || "No summary returned.";
+  } catch (err) {
+    console.error("❌ Failed to call local Gemini proxy:", err);
+    throw err;
+  }
+}
+
