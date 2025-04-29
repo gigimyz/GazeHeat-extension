@@ -8,17 +8,17 @@
     "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["src/content.js"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["webgazer.js", "heatmap.min.js", "page_tracker.js"],
+      "resources": ["public/webgazer.js", "public/heatmap.min.js", "src/page_tracker.js"],
       "matches": ["<all_urls>"]
     }
   ]

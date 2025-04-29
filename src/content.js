@@ -12,9 +12,9 @@ function injectScript(file) {
   document.documentElement.appendChild(script);
 }
 
-injectScript('webgazer.js');
-injectScript('heatmap.min.js');
-injectScript('page_tracker.js');
+injectScript('public/webgazer.js');
+injectScript('public/heatmap.min.js');
+injectScript('src/page_tracker.js');
 
 // -----------------------------
 // Handle Messages from Popup
