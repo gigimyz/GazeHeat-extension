@@ -1,6 +1,18 @@
-# GazeHeat
+# GazeHeat Chrome Extension
+![Demo Animation](media/demo.gif)
+
+![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-Beta-orange)
+![Backend: Node.js](https://img.shields.io/badge/Backend-Node.js-brightgreen)
+![Gaze Tracking: WebGazer.js](https://img.shields.io/badge/Gaze_Tracking-WebGazer.js-blue)
+![AI: Gemini 2.0](https://img.shields.io/badge/AI-Gemini%202.0-lightgrey)
+
+
+🔍 **Motivation:**  
 
 GazeHeat is a Chrome Extension that visualizes user gaze on webpages in real-time using WebGazer.js and generates a heatmap overlay. It integrates a local Node.js server to securely connect with the Gemini API and summarizes the top-attended sections into a clear, AI-generated summary.
+
+Modern web users spend hours reading digital content, yet we lack tools that reflect how our attention is distributed. GazeHeat helps users and developers understand real-time gaze behavior on webpages, offering insight into reading habits, user engagement, and content design.
+
 
 ## Features
 
